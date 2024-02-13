@@ -14,7 +14,6 @@ mod player;
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
-const PLAYER_SPEED: i32 = 20;
 /// How much the player turns with the arrow keys
 const PLAYER_AGILITY: f64 = 7.0;
 
@@ -52,10 +51,11 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
 
 fn update(player: &mut Player) {
     if player.thrusters() {
-        let angle = player.angle();
-        let x = PLAYER_SPEED as f64 * angle.to_radians().cos();
-        let y = PLAYER_SPEED as f64 * angle.to_radians().sin();
-        player.set_position(player.position().offset(x as i32, y as i32));
+        if player.speed() < player::MAX_SPEED {
+            player.set_speed(player.speed() + player::ACCELERATION);
+        }
+    } else {
+        player.set_speed(player.speed().saturating_sub(player::DECCELERATION));
     }
 
     if player.rotating_left() {
@@ -65,6 +65,11 @@ fn update(player: &mut Player) {
     if player.rotating_right() {
         player.set_angle((player.angle() + PLAYER_AGILITY) % 365.0);
     }
+
+    let angle = player.angle();
+    let x = player.speed() as f64 * angle.to_radians().cos();
+    let y = player.speed() as f64 * angle.to_radians().sin();
+    player.set_position(player.position().offset(x as i32, y as i32));
 }
 
 fn main() -> SdlError {

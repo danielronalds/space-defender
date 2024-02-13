@@ -20,6 +20,10 @@ impl PlayerSprite {
     }
 }
 
+pub const MAX_SPEED: u32 = 28;
+pub const ACCELERATION: u32 = 2;
+pub const DECCELERATION: u32 = 1;
+
 /// A struct represnting the player's ship
 pub struct Player {
     position: Point,
@@ -27,6 +31,7 @@ pub struct Player {
     rotating_left: bool,
     rotating_right: bool,
     thrusters: bool,
+    speed: u32,
 }
 
 impl Player {
@@ -76,6 +81,14 @@ impl Player {
     pub fn set_position(&mut self, position: Point) {
         self.position = position;
     }
+
+    pub fn speed(&self) -> u32 {
+        self.speed
+    }
+
+    pub fn set_speed(&mut self, speed: u32) {
+        self.speed = speed;
+    }
 }
 
 impl Default for Player {
@@ -86,6 +99,7 @@ impl Default for Player {
             rotating_left: false,
             rotating_right: false,
             thrusters: false,
+            speed: 0,
         }
     }
 }
