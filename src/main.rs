@@ -15,6 +15,8 @@ const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
 const PLAYER_SPEED: i32 = 20;
+/// How much the player turns with the arrow keys
+const PLAYER_AGILITY: f64 = 7.0;
 
 const SCALE: u32 = 6;
 
@@ -57,11 +59,11 @@ fn update(player: &mut Player) {
     }
 
     if player.rotating_left() {
-        player.set_angle((player.angle() - 5.0) % 365.0);
+        player.set_angle((player.angle() - PLAYER_AGILITY) % 365.0);
     }
 
     if player.rotating_right() {
-        player.set_angle((player.angle() + 5.0) % 365.0);
+        player.set_angle((player.angle() + PLAYER_AGILITY) % 365.0);
     }
 }
 

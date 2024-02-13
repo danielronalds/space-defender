@@ -23,7 +23,6 @@ impl PlayerSprite {
 /// A struct represnting the player's ship
 pub struct Player {
     position: Point,
-    sprite: PlayerSprite,
     angle: f64,
     rotating_left: bool,
     rotating_right: bool,
@@ -60,7 +59,10 @@ impl Player {
     }
 
     pub fn get_src_rect(&self) -> Rect {
-        self.sprite.get_src_rect()
+        match self.thrusters() {
+            true => PlayerSprite::Moving.get_src_rect(),
+            false => PlayerSprite::Stationary.get_src_rect(),
+        }
     }
 
     pub fn thrusters(&self) -> bool {
@@ -80,7 +82,6 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             position: Point::new(0, 0),
-            sprite: PlayerSprite::Stationary,
             angle: 0.0,
             rotating_left: false,
             rotating_right: false,
