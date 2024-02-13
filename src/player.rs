@@ -1,6 +1,6 @@
 use sdl2::rect::{Point, Rect};
 
-use crate::{SPRITE_HEIGHT, SPRITE_WIDTH, Sprite};
+use crate::{Sprite, SPRITE_HEIGHT, SPRITE_WIDTH};
 
 /// Updates the player based on the frame tick
 pub fn update_player(player: &mut Player) {
@@ -29,7 +29,6 @@ pub fn update_player(player: &mut Player) {
     let x = player.speed() as f64 * angle.to_radians().cos();
     let y = player.speed() as f64 * angle.to_radians().sin();
     player.set_position(player.position().offset(x as i32, y as i32));
-
 }
 
 #[derive(Debug, Clone, Copy)]

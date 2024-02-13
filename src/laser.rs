@@ -47,7 +47,11 @@ pub struct Laser {
 
 impl Laser {
     pub fn new(position: Point, angle: f64) -> Self {
-        Self { position, angle, lifetime: LIFETIME }
+        Self {
+            position,
+            angle,
+            lifetime: LIFETIME,
+        }
     }
 
     pub fn position(&self) -> Point {
