@@ -15,7 +15,7 @@ const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
 /// How much the player turns with the arrow keys
-const PLAYER_AGILITY: f64 = 7.0;
+const PLAYER_AGILITY: f64 = 5.0;
 
 const SCALE: u32 = 6;
 
@@ -58,12 +58,17 @@ fn update(player: &mut Player) {
         player.set_speed(player.speed().saturating_sub(player::DECCELERATION));
     }
 
+    let player_agility = match player.thrusters() {
+        true => PLAYER_AGILITY / 2.0,
+        false => PLAYER_AGILITY,
+    };
+
     if player.rotating_left() {
-        player.set_angle((player.angle() - PLAYER_AGILITY) % 365.0);
+        player.set_angle((player.angle() - player_agility) % 365.0);
     }
 
     if player.rotating_right() {
-        player.set_angle((player.angle() + PLAYER_AGILITY) % 365.0);
+        player.set_angle((player.angle() + player_agility) % 365.0);
     }
 
     let angle = player.angle();
@@ -151,7 +156,7 @@ fn main() -> SdlError {
 
         render(&mut canvas, &texture, &player)?;
 
-        std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 20));
+        std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));
     }
 
     Ok(())

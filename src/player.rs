@@ -20,8 +20,8 @@ impl PlayerSprite {
     }
 }
 
-pub const MAX_SPEED: u32 = 28;
-pub const ACCELERATION: u32 = 2;
+pub const MAX_SPEED: u32 = 20;
+pub const ACCELERATION: u32 = 3;
 pub const DECCELERATION: u32 = 1;
 
 /// A struct represnting the player's ship
