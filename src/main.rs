@@ -14,6 +14,8 @@ mod player;
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
+const PLAYER_SPEED: i32 = 20;
+
 const SCALE: u32 = 6;
 
 type SdlError = Result<(), String>;
@@ -35,7 +37,8 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
         texture,
         player.get_src_rect(),
         screen_rect,
-        player.angle(),
+        // Below we're adding 90 degrees so that the movement lines up with what is happening
+        (player.angle() + 90.0) % 365.0,
         None,
         false,
         false,
@@ -46,6 +49,13 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
 }
 
 fn update(player: &mut Player) {
+    if player.thrusters() {
+        let angle = player.angle();
+        let x = PLAYER_SPEED as f64 * angle.to_radians().cos();
+        let y = PLAYER_SPEED as f64 * angle.to_radians().sin();
+        player.set_position(player.position().offset(x as i32, y as i32));
+    }
+
     if player.rotating_left() {
         player.set_angle((player.angle() - 5.0) % 365.0);
     }
@@ -89,6 +99,18 @@ fn main() -> SdlError {
                     ..
                 } => {
                     break 'running;
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Up),
+                    ..
+                } => {
+                    player.set_thrusters(true);
+                }
+                Event::KeyUp {
+                    keycode: Some(Keycode::Up),
+                    ..
+                } => {
+                    player.set_thrusters(false);
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Right),

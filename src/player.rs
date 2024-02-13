@@ -1,4 +1,4 @@
-use sdl2::rect::{Rect, Point};
+use sdl2::rect::{Point, Rect};
 
 use crate::{SPRITE_HEIGHT, SPRITE_WIDTH};
 
@@ -27,6 +27,7 @@ pub struct Player {
     angle: f64,
     rotating_left: bool,
     rotating_right: bool,
+    thrusters: bool,
 }
 
 impl Player {
@@ -61,6 +62,18 @@ impl Player {
     pub fn get_src_rect(&self) -> Rect {
         self.sprite.get_src_rect()
     }
+
+    pub fn thrusters(&self) -> bool {
+        self.thrusters
+    }
+
+    pub fn set_thrusters(&mut self, thrusters: bool) {
+        self.thrusters = thrusters;
+    }
+
+    pub fn set_position(&mut self, position: Point) {
+        self.position = position;
+    }
 }
 
 impl Default for Player {
@@ -71,6 +84,7 @@ impl Default for Player {
             angle: 0.0,
             rotating_left: false,
             rotating_right: false,
+            thrusters: false,
         }
     }
 }
