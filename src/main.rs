@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use player::{Player, update_player};
+use laser::{update_laser, Laser};
+use player::{update_player, Player};
 use sdl2::{
     event::Event,
     image::{self, InitFlag, LoadTexture},
@@ -9,7 +10,13 @@ use sdl2::{
     render::{Texture, WindowCanvas},
 };
 
+trait Sprite {
+    fn get_src_rect(&self) -> Rect;
+}
+
 mod player;
+
+mod laser;
 
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
@@ -18,14 +25,20 @@ const SCALE: u32 = 6;
 
 type SdlError = Result<(), String>;
 
-fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlError {
+fn render(
+    canvas: &mut WindowCanvas,
+    texture: &Texture,
+    player: &Player,
+    lasers: &[Laser],
+) -> SdlError {
     canvas.clear();
 
     let (width, height) = canvas.output_size()?;
 
     let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
 
-    let screen_rect = Rect::from_center(
+    // Rendering Player
+    let player_screen_rect = Rect::from_center(
         center_screen + player.position(),
         SCALE * SPRITE_WIDTH,
         SCALE * SPRITE_HEIGHT,
@@ -34,7 +47,7 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
     canvas.copy_ex(
         texture,
         player.get_src_rect(),
-        screen_rect,
+        player_screen_rect,
         // Below we're adding 90 degrees so that the movement lines up with what is happening
         (player.angle() + 90.0) % 365.0,
         None,
@@ -42,12 +55,35 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
         false,
     )?;
 
+    // Rendering Lasers
+    for laser in lasers {
+        let laser_screen_rect = Rect::from_center(
+            center_screen + laser.position(),
+            SCALE * SPRITE_WIDTH,
+            SCALE * SPRITE_HEIGHT,
+        );
+
+        canvas.copy_ex(
+            texture,
+            laser.get_src_rect(),
+            laser_screen_rect,
+            (laser.angle() + 90.0) % 365.0,
+            None,
+            false,
+            false,
+        )?;
+    }
+
     canvas.present();
     Ok(())
 }
 
-fn update(player: &mut Player) {
+fn update(player: &mut Player, lasers: Vec<Laser>) -> Vec<Laser> {
     update_player(player);
+    lasers
+        .iter()
+        .filter_map(|l| update_laser(l.clone()))
+        .collect::<Vec<Laser>>()
 }
 
 fn main() -> SdlError {
@@ -72,6 +108,8 @@ fn main() -> SdlError {
     let texture = texture_creator.load_texture("assets/sprites.png")?;
 
     let mut player = Player::default();
+
+    let mut lasers = vec![];
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -121,13 +159,20 @@ fn main() -> SdlError {
                 } => {
                     player.set_rotating_left(false);
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Space),
+                    ..
+                } => {
+                    lasers.push(Laser::new(player.position(), player.angle()));
+                    println!("Fired laser! {:#?}", &lasers);
+                }
                 _ => (),
             }
         }
 
-        update(&mut player);
+        lasers = update(&mut player, lasers);
 
-        render(&mut canvas, &texture, &player)?;
+        render(&mut canvas, &texture, &player, &lasers)?;
 
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));
     }

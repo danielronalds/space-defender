@@ -1,6 +1,6 @@
 use sdl2::rect::{Point, Rect};
 
-use crate::{SPRITE_HEIGHT, SPRITE_WIDTH};
+use crate::{SPRITE_HEIGHT, SPRITE_WIDTH, Sprite};
 
 /// Updates the player based on the frame tick
 pub fn update_player(player: &mut Player) {
@@ -38,8 +38,8 @@ pub enum PlayerSprite {
     Moving,
 }
 
-impl PlayerSprite {
-    pub fn get_src_rect(&self) -> Rect {
+impl Sprite for PlayerSprite {
+    fn get_src_rect(&self) -> Rect {
         use PlayerSprite::*;
         let (x, y) = match self {
             Stationary => (0, 0),
