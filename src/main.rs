@@ -1,12 +1,15 @@
 use std::time::Duration;
 
+use player::Player;
 use sdl2::{
     event::Event,
     image::{self, InitFlag, LoadTexture},
     keyboard::Keycode,
     rect::{Point, Rect},
-    render::{Texture, WindowCanvas}
+    render::{Texture, WindowCanvas},
 };
+
+mod player;
 
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
@@ -14,45 +17,6 @@ const SPRITE_HEIGHT: u32 = 16;
 const SCALE: u32 = 6;
 
 type SdlError = Result<(), String>;
-
-#[derive(Debug, Clone, Copy)]
-enum PlayerSprite {
-    Stationary,
-    Moving,
-}
-
-impl PlayerSprite {
-    pub fn get_src_rect(&self) -> Rect {
-        use PlayerSprite::*;
-        let (x, y) = match self {
-            Stationary => (0, 0),
-            Moving => (16, 0),
-        };
-
-        Rect::new(x, y, SPRITE_WIDTH, SPRITE_HEIGHT)
-    }
-}
-
-/// A struct represnting the player's ship
-struct Player {
-    position: Point,
-    sprite: PlayerSprite,
-    angle: f64,
-    rotating_left: bool,
-    rotating_right: bool,
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Self {
-            position: Point::new(0, 0),
-            sprite: PlayerSprite::Stationary,
-            angle: 0.0,
-            rotating_left: false,
-            rotating_right: false,
-        }
-    }
-}
 
 fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlError {
     canvas.clear();
@@ -62,24 +26,32 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
     let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
 
     let screen_rect = Rect::from_center(
-        center_screen + player.position,
+        center_screen + player.position(),
         SCALE * SPRITE_WIDTH,
         SCALE * SPRITE_HEIGHT,
     );
 
-    canvas.copy_ex(texture, player.sprite.get_src_rect(), screen_rect, player.angle, None, false,false)?;
+    canvas.copy_ex(
+        texture,
+        player.get_src_rect(),
+        screen_rect,
+        player.angle(),
+        None,
+        false,
+        false,
+    )?;
 
     canvas.present();
     Ok(())
 }
 
 fn update(player: &mut Player) {
-    if player.rotating_left {
-        player.angle = (player.angle - 5.0) % 365.0
+    if player.rotating_left() {
+        player.set_angle((player.angle() - 5.0) % 365.0);
     }
 
-    if player.rotating_right {
-        player.angle = (player.angle + 5.0) % 365.0
+    if player.rotating_right() {
+        player.set_angle((player.angle() + 5.0) % 365.0);
     }
 }
 
@@ -118,17 +90,29 @@ fn main() -> SdlError {
                 } => {
                     break 'running;
                 }
-                Event::KeyDown { keycode: Some(Keycode::Right), ..} => {
-                    player.rotating_right = true;
+                Event::KeyDown {
+                    keycode: Some(Keycode::Right),
+                    ..
+                } => {
+                    player.set_rotating_right(true);
                 }
-                Event::KeyDown { keycode: Some(Keycode::Left), ..} => {
-                    player.rotating_left = true;
+                Event::KeyDown {
+                    keycode: Some(Keycode::Left),
+                    ..
+                } => {
+                    player.set_rotating_left(true);
                 }
-                Event::KeyUp { keycode: Some(Keycode::Right), ..} => {
-                    player.rotating_right = false;
+                Event::KeyUp {
+                    keycode: Some(Keycode::Right),
+                    ..
+                } => {
+                    player.set_rotating_right(false);
                 }
-                Event::KeyUp { keycode: Some(Keycode::Left), ..} => {
-                    player.rotating_left = false;
+                Event::KeyUp {
+                    keycode: Some(Keycode::Left),
+                    ..
+                } => {
+                    player.set_rotating_left(false);
                 }
                 _ => (),
             }
