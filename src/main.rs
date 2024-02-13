@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use player::Player;
+use player::{Player, update_player};
 use sdl2::{
     event::Event,
     image::{self, InitFlag, LoadTexture},
@@ -13,9 +13,6 @@ mod player;
 
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
-
-/// How much the player turns with the arrow keys
-const PLAYER_AGILITY: f64 = 5.0;
 
 const SCALE: u32 = 6;
 
@@ -50,31 +47,7 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
 }
 
 fn update(player: &mut Player) {
-    if player.thrusters() {
-        if player.speed() < player::MAX_SPEED {
-            player.set_speed(player.speed() + player::ACCELERATION);
-        }
-    } else {
-        player.set_speed(player.speed().saturating_sub(player::DECCELERATION));
-    }
-
-    let player_agility = match player.thrusters() {
-        true => PLAYER_AGILITY / 2.0,
-        false => PLAYER_AGILITY,
-    };
-
-    if player.rotating_left() {
-        player.set_angle((player.angle() - player_agility) % 365.0);
-    }
-
-    if player.rotating_right() {
-        player.set_angle((player.angle() + player_agility) % 365.0);
-    }
-
-    let angle = player.angle();
-    let x = player.speed() as f64 * angle.to_radians().cos();
-    let y = player.speed() as f64 * angle.to_radians().sin();
-    player.set_position(player.position().offset(x as i32, y as i32));
+    update_player(player);
 }
 
 fn main() -> SdlError {

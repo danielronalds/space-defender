@@ -2,6 +2,36 @@ use sdl2::rect::{Point, Rect};
 
 use crate::{SPRITE_HEIGHT, SPRITE_WIDTH};
 
+/// Updates the player based on the frame tick
+pub fn update_player(player: &mut Player) {
+    if player.thrusters() {
+        if player.speed() < MAX_SPEED {
+            player.set_speed(player.speed() + ACCELERATION);
+        }
+    } else {
+        player.set_speed(player.speed().saturating_sub(DECCELERATION));
+    }
+
+    let player_agility = match player.thrusters() {
+        true => AGILITY,
+        false => AGILITY / 2.0,
+    };
+
+    if player.rotating_left() {
+        player.set_angle((player.angle() - player_agility) % 365.0);
+    }
+
+    if player.rotating_right() {
+        player.set_angle((player.angle() + player_agility) % 365.0);
+    }
+
+    let angle = player.angle();
+    let x = player.speed() as f64 * angle.to_radians().cos();
+    let y = player.speed() as f64 * angle.to_radians().sin();
+    player.set_position(player.position().offset(x as i32, y as i32));
+
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum PlayerSprite {
     Stationary,
@@ -20,9 +50,10 @@ impl PlayerSprite {
     }
 }
 
-pub const MAX_SPEED: u32 = 20;
-pub const ACCELERATION: u32 = 3;
-pub const DECCELERATION: u32 = 1;
+const MAX_SPEED: u32 = 20;
+const ACCELERATION: u32 = 3;
+const DECCELERATION: u32 = 1;
+const AGILITY: f64 = 7.0;
 
 /// A struct represnting the player's ship
 pub struct Player {
