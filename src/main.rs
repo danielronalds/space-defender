@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use enemy::Enemy;
 use laser::{update_laser, Laser};
 use player::{update_player, Player};
 use sdl2::{
@@ -18,6 +19,8 @@ mod player;
 
 mod laser;
 
+mod enemy;
+
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
@@ -30,6 +33,7 @@ fn render(
     texture: &Texture,
     player: &Player,
     lasers: &[Laser],
+    enemies: &[Enemy],
 ) -> SdlError {
     canvas.clear();
 
@@ -54,6 +58,17 @@ fn render(
         false,
         false,
     )?;
+
+    // Rendering Enemies
+    for enemy in enemies {
+        let enemy_screen_rect = Rect::from_center(
+            center_screen + enemy.position(),
+            SCALE * SPRITE_WIDTH,
+            SCALE * SPRITE_HEIGHT,
+        );
+
+        canvas.copy(texture, enemy.get_src_rect(), enemy_screen_rect)?;
+    }
 
     // Rendering Lasers
     for laser in lasers {
@@ -110,6 +125,8 @@ fn main() -> SdlError {
     let mut player = Player::default();
 
     let mut lasers = vec![];
+
+    let enemies = vec![Enemy::new(Point::new(500, 500))];
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -172,7 +189,7 @@ fn main() -> SdlError {
 
         lasers = update(&mut player, lasers);
 
-        render(&mut canvas, &texture, &player, &lasers)?;
+        render(&mut canvas, &texture, &player, &lasers, &enemies)?;
 
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));
     }
