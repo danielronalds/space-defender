@@ -5,7 +5,7 @@ use sdl2::{
     image::{self, InitFlag, LoadTexture},
     keyboard::Keycode,
     rect::{Point, Rect},
-    render::{Texture, WindowCanvas},
+    render::{Texture, WindowCanvas}
 };
 
 const SPRITE_WIDTH: u32 = 16;
@@ -37,6 +37,9 @@ impl PlayerSprite {
 struct Player {
     position: Point,
     sprite: PlayerSprite,
+    angle: f64,
+    rotating_left: bool,
+    rotating_right: bool,
 }
 
 impl Default for Player {
@@ -44,11 +47,16 @@ impl Default for Player {
         Self {
             position: Point::new(0, 0),
             sprite: PlayerSprite::Stationary,
+            angle: 0.0,
+            rotating_left: false,
+            rotating_right: false,
         }
     }
 }
 
 fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlError {
+    canvas.clear();
+
     let (width, height) = canvas.output_size()?;
 
     let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
@@ -59,10 +67,20 @@ fn render(canvas: &mut WindowCanvas, texture: &Texture, player: &Player) -> SdlE
         SCALE * SPRITE_HEIGHT,
     );
 
-    canvas.copy(texture, player.sprite.get_src_rect(), screen_rect)?;
+    canvas.copy_ex(texture, player.sprite.get_src_rect(), screen_rect, player.angle, None, false,false)?;
 
     canvas.present();
     Ok(())
+}
+
+fn update(player: &mut Player) {
+    if player.rotating_left {
+        player.angle = (player.angle - 5.0) % 365.0
+    }
+
+    if player.rotating_right {
+        player.angle = (player.angle + 5.0) % 365.0
+    }
 }
 
 fn main() -> SdlError {
@@ -86,7 +104,7 @@ fn main() -> SdlError {
     let texture_creator = canvas.texture_creator();
     let texture = texture_creator.load_texture("assets/sprites.png")?;
 
-    let player = Player::default();
+    let mut player = Player::default();
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -100,9 +118,23 @@ fn main() -> SdlError {
                 } => {
                     break 'running;
                 }
+                Event::KeyDown { keycode: Some(Keycode::Right), ..} => {
+                    player.rotating_right = true;
+                }
+                Event::KeyDown { keycode: Some(Keycode::Left), ..} => {
+                    player.rotating_left = true;
+                }
+                Event::KeyUp { keycode: Some(Keycode::Right), ..} => {
+                    player.rotating_right = false;
+                }
+                Event::KeyUp { keycode: Some(Keycode::Left), ..} => {
+                    player.rotating_left = false;
+                }
                 _ => (),
             }
         }
+
+        update(&mut player);
 
         render(&mut canvas, &texture, &player)?;
 
