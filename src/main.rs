@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use enemy::Enemy;
+use enemy::{Enemy, update_enemy};
 use laser::{update_laser, Laser};
 use player::{update_player, Player};
 use rand::Rng;
@@ -54,7 +54,7 @@ fn render(
         player.get_src_rect(),
         player.get_dst_rect(center_screen),
         // Below we're adding 90 degrees so that the movement lines up with what is happening
-        (player.angle() + 90.0) % 365.0,
+        (player.angle() + 90.0) % 360.0,
         None,
         false,
         false,
@@ -62,10 +62,14 @@ fn render(
 
     // Rendering Enemies
     for enemy in enemies {
-        canvas.copy(
+        canvas.copy_ex(
             texture,
             enemy.get_src_rect(),
             enemy.get_dst_rect(center_screen),
+            (enemy.angle() + 90.0) % 360.0,
+            None,
+            false,
+            false,
         )?;
     }
 
@@ -75,7 +79,7 @@ fn render(
             texture,
             laser.get_src_rect(),
             laser.get_dst_rect(center_screen),
-            (laser.angle() + 90.0) % 365.0,
+            (laser.angle() + 90.0) % 360.0,
             None,
             false,
             false,
@@ -107,7 +111,7 @@ fn update(
                     return None;
                 }
             }
-            Some(e.to_owned())
+            Some(update_enemy(e, player.position()))
         })
         .collect();
 
