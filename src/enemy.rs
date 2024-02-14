@@ -30,14 +30,29 @@ fn angle_between_points(point_a: Point, point_b: Point) -> f64 {
 
 pub fn update_enemy(enemy: &Enemy, player_pos: Point, laser: &mut Vec<Laser>) -> Enemy {
     let mut enemy = enemy.clone();
+
+    // Facing towards the player 
     let angle_between_ships = angle_between_points(enemy.position(), player_pos);
     enemy.angle = angle_between_ships;
 
-    let chance = rand::thread_rng().gen_range(0..100);
+
+    // Shooting lasers
     // FIX: Enemy will always fire at player
+    let chance = rand::thread_rng().gen_range(0..100);
     if angle_between_ships == enemy.angle && chance > 95 {
         laser.push(Laser::new(enemy.position(), enemy.angle, LaserSprite::Red));
     }
+
+    let distance_between = enemy.position - player_pos;
+    let distance_between = ((distance_between.x.pow(2) + distance_between.y.pow(2)) as f64).sqrt();
+    if distance_between < ENEMY_STOPPING_POINT {
+        return enemy;
+    }
+
+    let angle = enemy.angle();
+    let x = ENEMY_SPEED as f64 * angle.to_radians().cos();
+    let y = ENEMY_SPEED as f64 * angle.to_radians().sin();
+    enemy.position = enemy.position().offset(x as i32, y as i32);
 
     enemy
 }
@@ -59,6 +74,10 @@ impl Sprite for EnemySprite {
         Rect::new(x, y, SPRITE_WIDTH, SPRITE_HEIGHT)
     }
 }
+
+const ENEMY_SPEED: u32 = 10;
+/// At which point the ships stop trying to fly closer to the player
+const ENEMY_STOPPING_POINT: f64 = 200.0;
 
 #[derive(Debug, Clone, PartialEq)]
 /// A struct represnting the player's ship
