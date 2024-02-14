@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use enemy::{Enemy, update_enemy};
-use laser::{update_laser, Laser};
+use enemy::{update_enemy, Enemy};
+use laser::{update_laser, Laser, LaserSprite};
 use player::{update_player, Player};
 use rand::Rng;
 use sdl2::{
@@ -45,6 +45,7 @@ fn render(
     player: &Player,
     lasers: &[Laser],
     enemies: &[Enemy],
+    enemy_lasers: &[Laser],
 ) -> SdlError {
     canvas.clear();
 
@@ -86,6 +87,18 @@ fn render(
         )?;
     }
 
+    for laser in enemy_lasers {
+        canvas.copy_ex(
+            texture,
+            laser.get_src_rect(),
+            laser.get_dst_rect(center_screen),
+            (laser.angle() + 90.0) % 360.0,
+            None,
+            false,
+            false,
+        )?;
+    }
+
     canvas.present();
     Ok(())
 }
@@ -94,11 +107,17 @@ fn update(
     player: &mut Player,
     lasers: &[Laser],
     enemies: &[Enemy],
+    enemy_lasers: &mut Vec<Laser>,
     center_screen: Point,
-) -> (Vec<Laser>, Vec<Enemy>) {
+) -> (Vec<Laser>, Vec<Enemy>, Vec<Laser>) {
     update_player(player);
 
     let lasers = lasers
+        .iter()
+        .filter_map(|l| update_laser(l.clone()))
+        .collect::<Vec<Laser>>();
+
+    let mut enemy_lasers = enemy_lasers
         .iter()
         .filter_map(|l| update_laser(l.clone()))
         .collect::<Vec<Laser>>();
@@ -111,11 +130,11 @@ fn update(
                     return None;
                 }
             }
-            Some(update_enemy(e, player.position()))
+            Some(update_enemy(e, player.position(), &mut enemy_lasers))
         })
         .collect();
 
-    (lasers, enemies)
+    (lasers, enemies, enemy_lasers)
 }
 
 fn main() -> SdlError {
@@ -140,10 +159,10 @@ fn main() -> SdlError {
     let texture = texture_creator.load_texture("assets/sprites.png")?;
 
     let mut player = Player::default();
-
     let mut lasers = vec![];
 
     let mut enemies = vec![Enemy::new(Point::new(500, 500))];
+    let mut enemy_lasers = vec![];
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -197,8 +216,11 @@ fn main() -> SdlError {
                     keycode: Some(Keycode::Space),
                     ..
                 } => {
-                    lasers.push(Laser::new(player.position(), player.angle()));
-                    println!("Fired laser! {:#?}", &lasers);
+                    lasers.push(Laser::new(
+                        player.position(),
+                        player.angle(),
+                        LaserSprite::Green,
+                    ));
                 }
                 _ => (),
             }
@@ -207,12 +229,19 @@ fn main() -> SdlError {
         let (width, height) = canvas.output_size()?;
         let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
 
-        let (new_lasers, new_enemies) = update(&mut player, &lasers, &enemies, center_screen);
+        let (new_lasers, new_enemies, new_enemy_lasers) = update(
+            &mut player,
+            &lasers,
+            &enemies,
+            &mut enemy_lasers,
+            center_screen,
+        );
         lasers = new_lasers;
         enemies = new_enemies;
+        enemy_lasers = new_enemy_lasers;
 
         // TODO: Remove this when not testing
-        while enemies.len() < 10 {
+        while enemies.len() < 7 {
             let mut rng = rand::thread_rng();
             let spawn = Point::new(
                 rng.gen_range(0..=width) as i32,
@@ -228,6 +257,7 @@ fn main() -> SdlError {
             &player,
             &lasers,
             &enemies,
+            &enemy_lasers,
         )?;
 
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));

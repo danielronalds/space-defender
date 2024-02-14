@@ -1,6 +1,7 @@
+use rand::Rng;
 use sdl2::rect::{Point, Rect};
 
-use crate::{SdlCopy, Sprite, SCALE, SPRITE_HEIGHT, SPRITE_WIDTH};
+use crate::{SdlCopy, Sprite, SCALE, SPRITE_HEIGHT, SPRITE_WIDTH, laser::{Laser, LaserSprite}};
 
 /// Calculates the angle between the points, given the X axis as the second line
 ///
@@ -27,9 +28,17 @@ fn angle_between_points(point_a: Point, point_b: Point) -> f64 {
     (angle_deg + 360.0) % 360.0
 }
 
-pub fn update_enemy(enemy: &Enemy, player_pos: Point) -> Enemy {
+pub fn update_enemy(enemy: &Enemy, player_pos: Point, laser: &mut Vec<Laser>) -> Enemy {
     let mut enemy = enemy.clone();
-    enemy.angle = angle_between_points(enemy.position(), player_pos);
+    let angle_between_ships = angle_between_points(enemy.position(), player_pos);
+    enemy.angle = angle_between_ships;
+
+    let chance = rand::thread_rng().gen_range(0..100);
+    // FIX: Enemy will always fire at player
+    if angle_between_ships == enemy.angle && chance > 95 {
+        laser.push(Laser::new(enemy.position(), enemy.angle, LaserSprite::Red));
+    }
+
     enemy
 }
 
