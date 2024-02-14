@@ -1,6 +1,6 @@
 use sdl2::rect::{Point, Rect};
 
-use crate::{Sprite, SPRITE_HEIGHT, SPRITE_WIDTH};
+use crate::{SdlCopy, Sprite, SPRITE_HEIGHT, SPRITE_WIDTH, SCALE};
 
 /// Updates the player based on the frame tick
 pub fn update_player(player: &mut Player) {
@@ -93,13 +93,6 @@ impl Player {
         self.rotating_left
     }
 
-    pub fn get_src_rect(&self) -> Rect {
-        match self.thrusters() {
-            true => PlayerSprite::Moving.get_src_rect(),
-            false => PlayerSprite::Stationary.get_src_rect(),
-        }
-    }
-
     pub fn thrusters(&self) -> bool {
         self.thrusters
     }
@@ -131,5 +124,22 @@ impl Default for Player {
             thrusters: false,
             speed: 0,
         }
+    }
+}
+
+impl SdlCopy for Player {
+    fn get_src_rect(&self) -> Rect {
+        match self.thrusters() {
+            true => PlayerSprite::Moving.get_src_rect(),
+            false => PlayerSprite::Stationary.get_src_rect(),
+        }
+    }
+
+    fn get_dst_rect(&self, center_screen: Point) -> Rect {
+        Rect::from_center(
+            center_screen + self.position(),
+            SCALE * SPRITE_WIDTH,
+            SCALE * SPRITE_HEIGHT,
+        )
     }
 }

@@ -1,6 +1,6 @@
-use sdl2::rect::{Rect, Point};
+use sdl2::rect::{Point, Rect};
 
-use crate::{Sprite, SPRITE_WIDTH, SPRITE_HEIGHT};
+use crate::{SdlCopy, Sprite, SPRITE_HEIGHT, SPRITE_WIDTH, SCALE};
 
 #[derive(Debug, Clone, Copy)]
 enum EnemySprite {
@@ -20,21 +20,32 @@ impl Sprite for EnemySprite {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 /// A struct represnting the player's ship
 pub struct Enemy {
     position: Point,
 }
 
 impl Enemy {
-    pub fn new(position: Point) -> Self { Self { position } }
+    pub fn new(position: Point) -> Self {
+        Self { position }
+    }
 
     pub fn position(&self) -> Point {
         self.position
     }
 }
 
-impl Sprite for Enemy {
+impl SdlCopy for Enemy {
     fn get_src_rect(&self) -> Rect {
         EnemySprite::Stationary.get_src_rect()
+    }
+
+    fn get_dst_rect(&self, center_screen: Point) -> Rect {
+        Rect::from_center(
+            center_screen + self.position(),
+            SCALE * SPRITE_WIDTH,
+            SCALE * SPRITE_HEIGHT,
+        )
     }
 }

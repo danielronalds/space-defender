@@ -15,6 +15,15 @@ trait Sprite {
     fn get_src_rect(&self) -> Rect;
 }
 
+/// A trait that defines the required methods for a struct to be copied to the canvas
+trait SdlCopy {
+    /// The src rectangle from the pallete
+    fn get_src_rect(&self) -> Rect;
+
+    /// The dst rectangle. Offset of the screen center should already be factored in
+    fn get_dst_rect(&self, center_screen: Point) -> Rect;
+}
+
 mod player;
 
 mod laser;
@@ -30,6 +39,7 @@ type SdlError = Result<(), String>;
 
 fn render(
     canvas: &mut WindowCanvas,
+    center_screen: Point,
     texture: &Texture,
     player: &Player,
     lasers: &[Laser],
@@ -37,21 +47,11 @@ fn render(
 ) -> SdlError {
     canvas.clear();
 
-    let (width, height) = canvas.output_size()?;
-
-    let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
-
     // Rendering Player
-    let player_screen_rect = Rect::from_center(
-        center_screen + player.position(),
-        SCALE * SPRITE_WIDTH,
-        SCALE * SPRITE_HEIGHT,
-    );
-
     canvas.copy_ex(
         texture,
         player.get_src_rect(),
-        player_screen_rect,
+        player.get_dst_rect(center_screen),
         // Below we're adding 90 degrees so that the movement lines up with what is happening
         (player.angle() + 90.0) % 365.0,
         None,
@@ -61,27 +61,15 @@ fn render(
 
     // Rendering Enemies
     for enemy in enemies {
-        let enemy_screen_rect = Rect::from_center(
-            center_screen + enemy.position(),
-            SCALE * SPRITE_WIDTH,
-            SCALE * SPRITE_HEIGHT,
-        );
-
-        canvas.copy(texture, enemy.get_src_rect(), enemy_screen_rect)?;
+        canvas.copy(texture, enemy.get_src_rect(), enemy.get_dst_rect(center_screen))?;
     }
 
     // Rendering Lasers
     for laser in lasers {
-        let laser_screen_rect = Rect::from_center(
-            center_screen + laser.position(),
-            SCALE * SPRITE_WIDTH,
-            SCALE * SPRITE_HEIGHT,
-        );
-
         canvas.copy_ex(
             texture,
             laser.get_src_rect(),
-            laser_screen_rect,
+            laser.get_dst_rect(center_screen),
             (laser.angle() + 90.0) % 365.0,
             None,
             false,
@@ -93,12 +81,31 @@ fn render(
     Ok(())
 }
 
-fn update(player: &mut Player, lasers: Vec<Laser>) -> Vec<Laser> {
+fn update(
+    player: &mut Player,
+    lasers: &[Laser],
+    enemies: &[Enemy],
+    center_screen: Point,
+) -> (Vec<Laser>, Vec<Enemy>) {
     update_player(player);
-    lasers
+
+    let lasers = lasers
         .iter()
         .filter_map(|l| update_laser(l.clone()))
-        .collect::<Vec<Laser>>()
+        .collect::<Vec<Laser>>();
+
+    let enemies = enemies
+        .into_iter()
+        .filter_map(|e| {
+            for laser in lasers.iter() {
+                if laser.hit(center_screen, e.get_dst_rect(center_screen)) {
+                    return None;
+                }
+            }
+            Some(e.to_owned())
+        }).collect();
+
+    (lasers, enemies)
 }
 
 fn main() -> SdlError {
@@ -126,7 +133,7 @@ fn main() -> SdlError {
 
     let mut lasers = vec![];
 
-    let enemies = vec![Enemy::new(Point::new(500, 500))];
+    let mut enemies = vec![Enemy::new(Point::new(500, 500))];
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -187,9 +194,14 @@ fn main() -> SdlError {
             }
         }
 
-        lasers = update(&mut player, lasers);
+        let (width, height) = canvas.output_size()?;
+        let center_screen = Point::new(width as i32 / 2, height as i32 / 2);
 
-        render(&mut canvas, &texture, &player, &lasers, &enemies)?;
+        let (new_lasers, new_enemies) = update(&mut player, &lasers, &enemies, center_screen);
+        lasers = new_lasers;
+        enemies = new_enemies;
+
+        render(&mut canvas, center_screen, &texture, &player, &lasers, &enemies)?;
 
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));
     }
