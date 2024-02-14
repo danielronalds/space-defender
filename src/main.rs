@@ -3,6 +3,7 @@ use std::time::Duration;
 use enemy::Enemy;
 use laser::{update_laser, Laser};
 use player::{update_player, Player};
+use rand::Rng;
 use sdl2::{
     event::Event,
     image::{self, InitFlag, LoadTexture},
@@ -61,7 +62,11 @@ fn render(
 
     // Rendering Enemies
     for enemy in enemies {
-        canvas.copy(texture, enemy.get_src_rect(), enemy.get_dst_rect(center_screen))?;
+        canvas.copy(
+            texture,
+            enemy.get_src_rect(),
+            enemy.get_dst_rect(center_screen),
+        )?;
     }
 
     // Rendering Lasers
@@ -103,7 +108,8 @@ fn update(
                 }
             }
             Some(e.to_owned())
-        }).collect();
+        })
+        .collect();
 
     (lasers, enemies)
 }
@@ -201,7 +207,24 @@ fn main() -> SdlError {
         lasers = new_lasers;
         enemies = new_enemies;
 
-        render(&mut canvas, center_screen, &texture, &player, &lasers, &enemies)?;
+        // TODO: Remove this when not testing
+        while enemies.len() < 10 {
+            let mut rng = rand::thread_rng();
+            let spawn = Point::new(
+                rng.gen_range(0..=width) as i32,
+                rng.gen_range(0..=height) as i32,
+            );
+            enemies.push(Enemy::new(spawn - center_screen));
+        }
+
+        render(
+            &mut canvas,
+            center_screen,
+            &texture,
+            &player,
+            &lasers,
+            &enemies,
+        )?;
 
         std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 40));
     }
