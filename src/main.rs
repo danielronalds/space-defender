@@ -34,7 +34,7 @@ mod enemy;
 const SPRITE_WIDTH: u32 = 16;
 const SPRITE_HEIGHT: u32 = 16;
 
-const SCALE: u32 = 6;
+const SCALE: u32 = 3;
 
 type SdlError = Result<(), String>;
 
@@ -130,7 +130,7 @@ fn update(
                     return None;
                 }
             }
-            Some(update_enemy(e, player.position(), &mut enemy_lasers))
+            Some(update_enemy(e, player.position(), &mut enemy_lasers, &enemies))
         })
         .collect();
 

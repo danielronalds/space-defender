@@ -1,7 +1,10 @@
 use rand::Rng;
 use sdl2::rect::{Point, Rect};
 
-use crate::{SdlCopy, Sprite, SCALE, SPRITE_HEIGHT, SPRITE_WIDTH, laser::{Laser, LaserSprite}};
+use crate::{
+    laser::{Laser, LaserSprite},
+    SdlCopy, Sprite, SCALE, SPRITE_HEIGHT, SPRITE_WIDTH,
+};
 
 /// Calculates the angle between the points, given the X axis as the second line
 ///
@@ -28,13 +31,17 @@ fn angle_between_points(point_a: Point, point_b: Point) -> f64 {
     (angle_deg + 360.0) % 360.0
 }
 
-pub fn update_enemy(enemy: &Enemy, player_pos: Point, laser: &mut Vec<Laser>) -> Enemy {
+pub fn update_enemy(
+    enemy: &Enemy,
+    player_pos: Point,
+    laser: &mut Vec<Laser>,
+    enemies: &[Enemy],
+) -> Enemy {
     let mut enemy = enemy.clone();
 
-    // Facing towards the player 
+    // Facing towards the player
     let angle_between_ships = angle_between_points(enemy.position(), player_pos);
     enemy.angle = angle_between_ships;
-
 
     // Shooting lasers
     // FIX: Enemy will always fire at player
@@ -43,10 +50,25 @@ pub fn update_enemy(enemy: &Enemy, player_pos: Point, laser: &mut Vec<Laser>) ->
         laser.push(Laser::new(enemy.position(), enemy.angle, LaserSprite::Red));
     }
 
+    // Not getting too close to the player
     let distance_between = enemy.position - player_pos;
     let distance_between = ((distance_between.x.pow(2) + distance_between.y.pow(2)) as f64).sqrt();
     if distance_between < ENEMY_STOPPING_POINT {
         return enemy;
+    }
+
+    // Not getting too close to other enemies
+    for other_enemy in enemies {
+        if other_enemy.position() == enemy.position() {
+            continue;
+        }
+
+        let distance_between = enemy.position - other_enemy.position();
+        let distance_between =
+            ((distance_between.x.pow(2) + distance_between.y.pow(2)) as f64).sqrt();
+        if distance_between < OTHER_ENEMY_STOPPING_POINT {
+            return enemy;
+        }
     }
 
     let angle = enemy.angle();
@@ -78,6 +100,8 @@ impl Sprite for EnemySprite {
 const ENEMY_SPEED: u32 = 10;
 /// At which point the ships stop trying to fly closer to the player
 const ENEMY_STOPPING_POINT: f64 = 200.0;
+/// At which point the ships stop trying to fly closer to each other
+const OTHER_ENEMY_STOPPING_POINT: f64 = 70.0;
 
 #[derive(Debug, Clone, PartialEq)]
 /// A struct represnting the player's ship
